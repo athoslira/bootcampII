@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Busque perfis de jogadores de basquete na Quadra em Foco.">
+  <title>Quadra em Foco | Jogadores de basquete</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="page-shell">
+    <header class="hero">
+      <p class="eyebrow">Dados em quadra</p>
+      <h1>Quadra <span>em Foco</span></h1>
+      <p class="hero-copy">Pesquise jogadores de basquete e descubra rapidamente os detalhes da carreira de cada atleta.</p>
+    </header>
+
+    <section class="search-panel" aria-labelledby="search-title">
+      <div>
+        <p class="section-label">Pesquisa de atletas</p>
+        <h2 id="search-title">Quem você quer conhecer?</h2>
+      </div>
+      <form id="player-form" class="search-form" novalidate>
+        <label for="player-name">Nome do atleta</label>
+        <div class="search-row">
+          <input id="player-name" name="player-name" type="search" placeholder="Ex.: LeBron James" required autocomplete="off">
+          <button id="search-button" type="submit">Buscar atleta <span aria-hidden="true">→</span></button>
+        </div>
+      </form>
+      <p class="search-hint">Use o nome completo para obter resultados mais precisos.</p>
+    </section>
+
+    <section id="result" class="result empty" aria-live="polite" aria-atomic="true">
+      <span class="result-icon" aria-hidden="true">⌕</span>
+      <p>Digite o nome de um jogador para visualizar seu perfil.</p>
+    </section>
+  </main>
+</body>
+</html>
+
