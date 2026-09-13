@@ -1,0 +1,9 @@
+{
+  "name": "quadra-em-foco",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test"
+  }
+}
+
