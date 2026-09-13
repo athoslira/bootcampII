@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizePlayer, playerCardMarkup, selectBasketballPlayer } from '../script.js';
+import { normalizePlayer, normalizeRosterPlayer, playerCardMarkup, selectBasketballPlayer } from '../script.js';
 
 test('selectBasketballPlayer prioriza atleta de basquete entre perfis com o mesmo nome', () => {
   const player = selectBasketballPlayer([
@@ -48,4 +48,16 @@ test('playerCardMarkup escapa texto recebido da API', () => {
 
   assert.match(html, /&lt;img/);
   assert.doesNotMatch(html, /<img src=x onerror/);
+});
+
+test('normalizeRosterPlayer associa atleta à equipe e mantém dados do elenco', () => {
+  const player = normalizeRosterPlayer(
+    { name: 'Evan Mobley', pos: 'FC', hgt: 83, weight: 215, tid: 5, college: 'USC', imgURL: 'https://cdn.example/evan.png' },
+    [{ tid: 5, region: 'Cleveland', name: 'Cavaliers', abbrev: 'CLE' }],
+  );
+
+  assert.equal(player.name, 'Evan Mobley');
+  assert.equal(player.team, 'Cleveland Cavaliers');
+  assert.equal(player.position, 'FC');
+  assert.equal(player.height, "6'11\"");
 });

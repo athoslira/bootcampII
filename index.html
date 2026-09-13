@@ -3,41 +3,37 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Busque perfis de jogadores de basquete na Quadra em Foco.">
-  <title>Quadra em Foco | Jogadores de basquete</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <meta name="description" content="Consulta rápida de atletas da NBA.">
+  <title>Quadra em Foco | Elenco NBA</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <main class="page-shell">
-    <header class="hero">
-      <p class="eyebrow">Dados em quadra</p>
-      <h1>Quadra <span>em Foco</span></h1>
-      <p class="hero-copy">Pesquise jogadores de basquete e descubra rapidamente os detalhes da carreira de cada atleta.</p>
-    </header>
-
-    <section class="search-panel" aria-labelledby="search-title">
-      <div>
-        <p class="section-label">Pesquisa de atletas</p>
-        <h2 id="search-title">Quem você quer conhecer?</h2>
+  <header class="masthead">
+    <a class="brand" href="./">QUADRA EM FOCO</a>
+    <p>Guia de atletas da NBA</p>
+  </header>
+  <main>
+    <section class="intro">
+      <p class="kicker">Elenco e fichas</p>
+      <h1>Atletas, sem enrolação.</h1>
+      <p>Consulte nome, equipe, posição, medidas e formação em uma base pública com mais de mil perfis.</p>
+    </section>
+    <section class="search-area" aria-labelledby="search-title">
+      <div class="search-heading">
+        <h2 id="search-title">Buscar atleta</h2>
+        <span id="player-count">Base carregada na primeira busca</span>
       </div>
-      <form id="player-form" class="search-form" novalidate>
-        <label for="player-name">Nome do atleta</label>
-        <div class="search-row">
-          <input id="player-name" name="player-name" type="search" placeholder="Ex.: LeBron James" required autocomplete="off">
-          <button id="search-button" type="submit">Buscar atleta <span aria-hidden="true">→</span></button>
+      <form id="player-form">
+        <label for="player-name">Nome ou parte do nome</label>
+        <div class="search-line">
+          <input id="player-name" type="search" placeholder="Ex.: Wembanyama" autocomplete="off" required>
+          <button type="submit">Pesquisar</button>
         </div>
       </form>
-      <p class="search-hint">Use o nome completo para obter resultados mais precisos.</p>
     </section>
-
-    <section id="result" class="result empty" aria-live="polite" aria-atomic="true">
-      <span class="result-icon" aria-hidden="true">⌕</span>
-      <p>Digite o nome de um jogador para visualizar seu perfil.</p>
-    </section>
+    <section id="result" class="results status" aria-live="polite">Use a busca para consultar a base de atletas.</section>
   </main>
+  <footer>Dados de elenco: NBA Rosters, dataset público em JSON.</footer>
   <script type="module" src="script.js"></script>
 </body>
 </html>

@@ -6,18 +6,18 @@ Seu nome completo — Matrícula 0000000
 
 ## Descrição
 
-Quadra em Foco é uma aplicação web para pesquisar jogadores de basquete pelo nome e consultar seus dados em um único cartão. É útil para quem quer conhecer rapidamente informações de atletas sem precisar procurar em várias páginas.
+Quadra em Foco é uma aplicação web para pesquisar atletas da NBA pelo nome e consultar equipe, posição, medidas e formação. A busca trabalha sobre uma base pública com mais de mil perfis.
 
 ## API utilizada
 
-- [TheSportsDB](https://www.thesportsdb.com/documentation) — API pública de dados esportivos.
-- Endpoint consumido: `https://www.thesportsdb.com/api/v1/json/123/searchplayers.php?p={nome-do-jogador}`
+- [NBA Rosters](https://github.com/A-V29/NBA.Rosters) — dataset público de elencos e atletas da NBA.
+- Endpoint consumido: `https://raw.githubusercontent.com/A-V29/NBA.Rosters/main/2025-26.NBA.Roster.json`
 
 ## Funcionalidades
 
 - Busca atletas pelo nome completo.
-- Exibe foto, nome, posição, time, nacionalidade, data de nascimento e altura.
-- Prioriza perfis de jogadores ligados ao basquete.
+- Exibe foto, nome, posição, time, altura, peso e universidade.
+- Pesquisa parcialmente o nome em uma base ampla de atletas.
 - Mostra mensagens amigáveis durante o carregamento, quando não há resultado e quando a API está indisponível.
 - Adapta o layout para telas de computador e celular.
 
@@ -26,13 +26,13 @@ Quadra em Foco é uma aplicação web para pesquisar jogadores de basquete pelo 
 1. Clone o repositório:
 
    ```bash
-   git clone https://github.com/SEU-USUARIO/quadra-em-foco.git
+   git clone https://github.com/athoslira/bootcampII.git
    ```
 
 2. Entre na pasta criada:
 
    ```bash
-   cd quadra-em-foco
+   cd bootcampII
    ```
 
 3. Abra o arquivo `index.html` no navegador ou use a extensão Live Server no VS Code.
@@ -45,8 +45,7 @@ Quadra em Foco é uma aplicação web para pesquisar jogadores de basquete pelo 
 
 ## Links
 
-- **Aplicação no ar (GitHub Pages):** https://SEU-USUARIO.github.io/quadra-em-foco/
-- **Repositório:** https://github.com/SEU-USUARIO/quadra-em-foco
+- **Aplicação no ar (GitHub Pages):** https://athoslira.github.io/bootcampII/
+- **Repositório:** https://github.com/athoslira/bootcampII
 
-> Antes de entregar, substitua `SEU-USUARIO`, seu nome e sua matrícula pelos dados reais. Depois de ativar o GitHub Pages, teste os dois links em uma aba anônima.
-
+> Antes de entregar, informe seu nome completo e matrícula na seção Autor. Depois de ativar o GitHub Pages, teste os dois links em uma aba anônima.
