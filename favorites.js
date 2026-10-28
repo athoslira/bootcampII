@@ -31,6 +31,10 @@ export function toFavoriteRecord(player) {
   };
 }
 
+export function favoriteKeySet(favorites) {
+  return new Set(favorites.map(({ chave_atleta: key }) => key));
+}
+
 export function favoriteCardMarkup(favorite) {
   const image = favorite.imagem_url?.startsWith('https://')
     ? `<img src="${escapeHtml(favorite.imagem_url)}" alt="Foto de ${escapeHtml(favorite.nome)}">`

@@ -1,4 +1,4 @@
-import { escapeHtml, favoriteCardMarkup, playerKey, toFavoriteRecord } from './favorites.js';
+import { escapeHtml, favoriteCardMarkup, favoriteKeySet, playerKey, toFavoriteRecord } from './favorites.js';
 
 const ROSTER_URL = 'https://raw.githubusercontent.com/A-V29/NBA.Rosters/main/2025-26.NBA.Roster.json';
 let rosterPromise;
@@ -28,7 +28,9 @@ export function normalizeRosterPlayer(player, teams) {
   };
 }
 
-export function playerCardMarkup(player) {
+export function playerCardMarkup(player, savedKeys = new Set()) {
+  const key = playerKey(player);
+  const isSaved = savedKeys.has(key);
   const image = player.image?.startsWith('https://')
     ? `<img src="${escapeHtml(player.image)}" alt="Foto de ${escapeHtml(player.name)}">`
     : '<div class="avatar-fallback" aria-hidden="true">NBA</div>';
@@ -36,7 +38,7 @@ export function playerCardMarkup(player) {
     <div class="player-photo">${image}</div>
     <div><p class="team-code">${escapeHtml(player.abbreviation || '')}</p><h2>${escapeHtml(player.name)}</h2><p>${escapeHtml(player.team)} · ${escapeHtml(player.position)}</p></div>
     <dl><div><dt>Altura</dt><dd>${escapeHtml(player.height)}</dd></div><div><dt>Peso</dt><dd>${escapeHtml(player.weight || 'Não informado')}</dd></div><div><dt>Faculdade</dt><dd>${escapeHtml(player.college || player.nationality || 'Não informado')}</dd></div></dl>
-    <button class="favorite-button" type="button" data-save-favorite="${escapeHtml(playerKey(player))}">Favoritar</button>
+    <button class="favorite-button" type="button" data-save-favorite="${escapeHtml(key)}"${isSaved ? ' disabled aria-pressed="true"' : ' aria-pressed="false"'}>${isSaved ? 'Salvo' : 'Favoritar'}</button>
   </article>`;
 }
 
@@ -68,6 +70,14 @@ function initialise() {
   const repositoryPromise = import('./supabase.js');
   let visiblePlayers = new Map();
   let favorites = [];
+  let lastMatches = [];
+
+  function renderMatches() {
+    if (!lastMatches.length) return;
+    result.className = 'results list';
+    const savedKeys = favoriteKeySet(favorites);
+    result.innerHTML = lastMatches.map((player) => playerCardMarkup(player, savedKeys)).join('');
+  }
 
   function renderFavorites() {
     favoritesList.innerHTML = favorites.map(favoriteCardMarkup).join('');
@@ -75,6 +85,7 @@ function initialise() {
     favoritesStatus.textContent = favorites.length
       ? ''
       : 'Nenhum favorito ainda. Pesquise e monte seu elenco.';
+    renderMatches();
   }
 
   async function refreshFavorites() {
@@ -100,11 +111,11 @@ function initialise() {
         .map((player) => normalizeRosterPlayer(player, roster.teams));
 
       count.textContent = `${roster.players.length.toLocaleString('pt-BR')} atletas catalogados`;
+      lastMatches = matches;
+      visiblePlayers = new Map(lastMatches.map((player) => [playerKey(player), player]));
       if (!matches.length) return setStatus(result, 'Nenhum atleta encontrado. Tente outro nome.', 'error');
 
-      visiblePlayers = new Map(matches.map((player) => [playerKey(player), player]));
-      result.className = 'results list';
-      result.innerHTML = matches.map(playerCardMarkup).join('');
+      renderMatches();
     } catch {
       setStatus(result, 'Não foi possível carregar a base agora. Tente novamente.', 'error');
     }

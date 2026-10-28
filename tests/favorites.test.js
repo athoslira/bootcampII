@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { favoriteCardMarkup, playerKey, toFavoriteRecord } from '../favorites.js';
+import { favoriteCardMarkup, favoriteKeySet, playerKey, toFavoriteRecord } from '../favorites.js';
 import { assertFavoriteId, assertFavoriteRecord } from '../supabase.js';
 
 const player = {
@@ -49,4 +49,11 @@ test('assertFavoriteRecord rejeita favorito sem chave', () => {
 test('assertFavoriteId aceita somente identificador positivo', () => {
   assert.equal(assertFavoriteId(4), 4);
   assert.throws(() => assertFavoriteId(0), /identificador/i);
+});
+
+test('favoriteKeySet indexa as chaves já persistidas', () => {
+  assert.deepEqual(
+    [...favoriteKeySet([{ chave_atleta: 'a--time' }, { chave_atleta: 'b--time' }])],
+    ['a--time', 'b--time'],
+  );
 });

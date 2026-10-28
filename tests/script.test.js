@@ -52,6 +52,19 @@ test('playerCardMarkup escapa texto recebido da API', () => {
   assert.doesNotMatch(html, /<img src=x onerror/);
 });
 
+test('playerCardMarkup desabilita atleta já persistido', () => {
+  const html = playerCardMarkup({
+    name: 'Aline',
+    position: 'Guard',
+    team: 'Sparks',
+    height: '1.70m',
+    image: '',
+  }, new Set(['aline--sparks']));
+
+  assert.match(html, />Salvo</);
+  assert.match(html, /data-save-favorite="aline--sparks" disabled/);
+});
+
 test('normalizeRosterPlayer associa atleta à equipe e mantém dados do elenco', () => {
   const player = normalizeRosterPlayer(
     { name: 'Evan Mobley', pos: 'FC', hgt: 83, weight: 215, tid: 5, college: 'USC', imgURL: 'https://cdn.example/evan.png' },
