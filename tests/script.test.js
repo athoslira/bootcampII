@@ -33,6 +33,8 @@ test('playerCardMarkup exibe nome, posição e time do atleta', () => {
   assert.match(html, /Aline/);
   assert.match(html, /Guard/);
   assert.match(html, /Sparks/);
+  assert.match(html, /data-save-favorite="aline--sparks"/);
+  assert.match(html, />Favoritar</);
 });
 
 test('playerCardMarkup escapa texto recebido da API', () => {

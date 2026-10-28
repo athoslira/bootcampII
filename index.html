@@ -32,6 +32,17 @@
       </form>
     </section>
     <section id="result" class="results status" aria-live="polite">Use a busca para consultar a base de atletas.</section>
+    <section class="favorites-area" aria-labelledby="favorites-title">
+      <div class="section-heading">
+        <div>
+          <p class="kicker">Seu elenco</p>
+          <h2 id="favorites-title">Meus favoritos</h2>
+        </div>
+        <span id="favorites-count">0 atletas</span>
+      </div>
+      <p id="favorites-status" class="status" role="status" aria-live="polite">Carregando favoritos...</p>
+      <div id="favorites-list" class="favorites-list"></div>
+    </section>
   </main>
   <footer>Dados de elenco: NBA Rosters, dataset público em JSON.</footer>
   <script type="module" src="script.js"></script>
