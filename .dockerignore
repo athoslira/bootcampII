@@ -1,0 +1,10 @@
+.git
+.github
+.vscode
+docs
+evidencias
+supabase
+tests
+README.md
+node_modules
+npm-debug.log
