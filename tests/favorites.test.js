@@ -48,5 +48,5 @@ test('assertFavoriteRecord rejeita favorito sem chave', () => {
 
 test('assertFavoriteId aceita somente identificador positivo', () => {
   assert.equal(assertFavoriteId(4), 4);
-  assert.throws(() => assertFavoriteId(0), /identificador/);
+  assert.throws(() => assertFavoriteId(0), /identificador/i);
 });
