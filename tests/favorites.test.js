@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { favoriteCardMarkup, playerKey, toFavoriteRecord } from '../favorites.js';
+import { assertFavoriteId, assertFavoriteRecord } from '../supabase.js';
 
 const player = {
   name: 'Victor Wembanyama',
@@ -39,4 +40,13 @@ test('favoriteCardMarkup escapa conteúdo remoto e inclui ação de remoção', 
   assert.match(html, /data-remove-favorite="7"/);
   assert.match(html, /&lt;img/);
   assert.doesNotMatch(html, /<img onerror/);
+});
+
+test('assertFavoriteRecord rejeita favorito sem chave', () => {
+  assert.throws(() => assertFavoriteRecord({ nome: 'A' }), /chave_atleta/);
+});
+
+test('assertFavoriteId aceita somente identificador positivo', () => {
+  assert.equal(assertFavoriteId(4), 4);
+  assert.throws(() => assertFavoriteId(0), /identificador/);
 });
