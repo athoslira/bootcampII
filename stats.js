@@ -65,7 +65,7 @@ function sum(rows, fields) {
   let foundValue = false;
   const total = rows.reduce((sumTotal, row) => sumTotal + fields.reduce((part, field) => {
     const rawValue = row[field];
-    if (rawValue === undefined || rawValue === null || rawValue === '') return part;
+    if (rawValue === undefined || rawValue === null || (typeof rawValue === 'string' && rawValue.trim() === '')) return part;
     const value = Number(rawValue);
     if (!Number.isFinite(value)) return part;
     foundValue = true;

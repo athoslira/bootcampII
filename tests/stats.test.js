@@ -47,6 +47,11 @@ test('calculatePlayerStats mantém métrica indisponível quando os valores são
   assert.equal(stats.apg, null);
 });
 
+test('calculatePlayerStats ignora strings compostas somente por espaços', () => {
+  const stats = calculatePlayerStats([{ wins: 1, losses: 0, assists: '   ' }]);
+  assert.equal(stats.apg, null);
+});
+
 test('createStatsIndex agrega linhas com o mesmo nome', () => {
   const index = createStatsIndex([
     { player_name: 'A.J. Lawson', wins: 1, losses: 0, one_point_made: 2 },
