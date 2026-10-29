@@ -32,10 +32,11 @@ export function normalizeRosterPlayer(player, teams) {
   };
 }
 
-export function playerCardMarkup(player, savedKeys = new Set(), selectedKeys = new Set()) {
+export function playerCardMarkup(player, savedKeys = new Set(), selectedKeys = new Set(), pendingKeys = new Set()) {
   const key = playerKey(player);
   const isSaved = savedKeys.has(key);
   const isSelected = selectedKeys.has(key);
+  const isSaving = pendingKeys.has(key);
   const image = player.image?.startsWith('https://')
     ? `<img src="${escapeHtml(player.image)}" alt="Foto de ${escapeHtml(player.name)}">`
     : '<div class="avatar-fallback" aria-hidden="true">NBA</div>';
@@ -44,7 +45,7 @@ export function playerCardMarkup(player, savedKeys = new Set(), selectedKeys = n
     <div><p class="team-code">${escapeHtml(player.abbreviation || '')}</p><h2>${escapeHtml(player.name)}</h2><p>${escapeHtml(player.team)} · ${escapeHtml(player.position)}</p></div>
     <dl><div><dt>Altura</dt><dd>${escapeHtml(player.height)}</dd></div><div><dt>Peso</dt><dd>${escapeHtml(player.weight || 'Não informado')}</dd></div><div><dt>Faculdade</dt><dd>${escapeHtml(player.college || player.nationality || 'Não informado')}</dd></div></dl>
     <div class="player-actions">
-      <button class="favorite-button" type="button" data-save-favorite="${escapeHtml(key)}"${isSaved ? ' disabled aria-pressed="true"' : ' aria-pressed="false"'}>${isSaved ? 'Salvo' : 'Favoritar'}</button>
+      <button class="favorite-button" type="button" data-save-favorite="${escapeHtml(key)}"${isSaved || isSaving ? ' disabled' : ''} aria-pressed="${isSaved}">${isSaved ? 'Salvo' : isSaving ? 'Salvando...' : 'Favoritar'}</button>
       <button class="button-secondary" type="button" data-add-comparison="${escapeHtml(key)}"${isSelected ? ' disabled aria-pressed="true"' : ' aria-pressed="false"'}>${isSelected ? 'No duelo' : 'Adicionar ao duelo'}</button>
     </div>
   </article>`;
@@ -91,6 +92,7 @@ function initialise() {
   const repositoryPromise = import('./supabase.js');
   let visiblePlayers = new Map();
   let favorites = [];
+  const pendingFavorites = new Set();
   let lastMatches = [];
   let comparisonSlots = [null, null];
   let statsIndex = new Map();
@@ -99,19 +101,40 @@ function initialise() {
   let statsError = '';
   const hasComparison = comparison && comparisonStatus && comparisonContent;
 
+  function restoreControlFocus(previous, removedKey) {
+    if (!previous) return;
+    const action = ['addComparison', 'removeComparison', 'saveFavorite']
+      .find((name) => previous.dataset?.[name] !== undefined);
+    if (!action) return;
+    const controls = [...result.querySelectorAll('button'), ...(comparisonContent?.querySelectorAll('button') ?? [])];
+    const findControl = (name, value) => controls.find((button) => !button.disabled && button.dataset[name] === String(value));
+    let target = findControl(action, previous.dataset[action]);
+    if (!target && action === 'addComparison') {
+      const slot = comparisonSlots.findIndex((player) => player && playerKey(player) === previous.dataset.addComparison);
+      target = findControl('removeComparison', slot);
+    }
+    if (!target && action === 'removeComparison' && removedKey) {
+      target = findControl('addComparison', removedKey);
+    }
+    (target ?? input).focus();
+  }
+
   function renderMatches() {
     if (!lastMatches.length) return;
+    const focused = result.contains(document.activeElement) ? document.activeElement : null;
     result.className = 'results list';
     const savedKeys = favoriteKeySet(favorites);
     const selectedKeys = new Set(comparisonSlots.filter(Boolean).map(playerKey));
-    result.innerHTML = lastMatches.map((player) => playerCardMarkup(player, savedKeys, selectedKeys)).join('');
+    result.innerHTML = lastMatches.map((player) => playerCardMarkup(player, savedKeys, selectedKeys, pendingFavorites)).join('');
     if (statsLoading) {
       result.querySelectorAll('[data-add-comparison]').forEach((button) => { button.disabled = true; });
     }
+    restoreControlFocus(focused);
   }
 
-  function renderComparison() {
+  function renderComparison(removedKey) {
     if (!hasComparison) return;
+    const focused = comparisonContent.contains(document.activeElement) ? document.activeElement : null;
     comparisonContent.innerHTML = comparisonMarkup(comparisonSlots, statsIndex);
     const selectedCount = comparisonSlots.filter(Boolean).length;
     comparisonStatus.textContent = statsLoading
@@ -124,6 +147,7 @@ function initialise() {
             ? 'Adicione mais um atleta encontrado pela busca.'
             : 'Adicione dois atletas encontrados pela busca.';
     renderMatches();
+    restoreControlFocus(focused, removedKey);
   }
 
   function renderFavorites() {
@@ -200,8 +224,9 @@ function initialise() {
     const button = event.target.closest?.('[data-save-favorite]');
     if (!button) return;
     const player = visiblePlayers.get(button.dataset.saveFavorite);
-    if (!player) return;
+    if (!player || pendingFavorites.has(button.dataset.saveFavorite) || favoriteKeySet(favorites).has(button.dataset.saveFavorite)) return;
 
+    pendingFavorites.add(button.dataset.saveFavorite);
     button.disabled = true;
     try {
       const saved = await (await repositoryPromise).createFavorite(toFavoriteRecord(player));
@@ -212,7 +237,8 @@ function initialise() {
         ? 'Esse atleta já está nos favoritos.'
         : 'Não foi possível salvar o atleta.';
     } finally {
-      button.disabled = false;
+      pendingFavorites.delete(button.dataset.saveFavorite);
+      renderMatches();
     }
   });
 
@@ -222,8 +248,9 @@ function initialise() {
     if (!button) return;
     const slot = Number(button.dataset.removeComparison);
     if (!Number.isInteger(slot) || slot < 0 || slot > 1) return;
+    const removedKey = comparisonSlots[slot] ? playerKey(comparisonSlots[slot]) : null;
     comparisonSlots = removePlayerFromComparison(comparisonSlots, slot);
-    renderComparison();
+    renderComparison(removedKey);
   });
 
   favoritesList.addEventListener('click', async (event) => {

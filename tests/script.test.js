@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { register } from 'node:module';
 import { normalizePlayer, normalizeRosterPlayer, playerCardMarkup, selectBasketballPlayer } from '../script.js';
 
 test('selectBasketballPlayer prioriza atleta de basquete entre perfis com o mesmo nome', () => {
@@ -104,17 +105,30 @@ class TestElement {
   html = '';
   buttons = [];
 
+  focus() { globalThis.document.activeElement = this; }
+  contains(element) { return element === this || this.buttons.includes(element); }
+
   set innerHTML(value) {
+    if (this.contains(globalThis.document?.activeElement)) globalThis.document.activeElement = globalThis.document.body;
     this.html = value;
-    this.buttons = [...value.matchAll(/<button\b[^>]*data-add-comparison="([^"]+)"([^>]*)>/g)]
-      .map(([, key, attributes]) => ({ dataset: { addComparison: key }, disabled: attributes.includes('disabled') }));
+    this.buttons = [...value.matchAll(/<button\b([^>]*)>/g)].map(([, attributes]) => {
+      const button = new TestElement();
+      button.dataset = Object.fromEntries([...attributes.matchAll(/data-([a-z-]+)="([^"]*)"/g)]
+        .map(([, name, key]) => [name.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase()), key]));
+      button.disabled = attributes.includes(' disabled');
+      return button;
+    });
   }
 
   get innerHTML() { return this.html; }
-  querySelectorAll() { return this.buttons; }
+  querySelectorAll(selector) {
+    if (selector === 'button') return this.buttons;
+    const attribute = selector.slice(6, -1).replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
+    return this.buttons.filter((button) => Object.hasOwn(button.dataset, attribute));
+  }
   addEventListener(type, listener) { this.listeners.set(type, listener); }
   async emit(type, dataset = {}) {
-    const button = { dataset, disabled: false };
+    const button = this.buttons.find((candidate) => Object.entries(dataset).every(([key, value]) => candidate.dataset[key] === value)) ?? { dataset, disabled: false };
     return this.listeners.get(type)?.({
       preventDefault() {},
       target: { closest: (selector) => {
@@ -129,15 +143,41 @@ const STATS_SOURCE = 'https://raw.githubusercontent.com/EasySportsApps/nba_api_2
 const STATS_CSV = 'player_name,wins,losses,one_point_made,two_point_made,three_point_made\nPlayer One,2,2,8,20,4\nPlayer Two,1,1,2,5,0';
 let appInstance = 0;
 
-async function startApp(t, { comparison = true, statsResponse = async () => ({ ok: true, text: async () => STATS_CSV }) } = {}) {
+// Intercepta somente o repositório externo das instâncias de integração.
+// O hook é suportado pelo Node 20; os demais módulos usam seu código real.
+const repositoryModule = `
+  export const listFavorites = () => globalThis.testFavoriteRepository.listFavorites();
+  export const createFavorite = (record) => globalThis.testFavoriteRepository.createFavorite(record);
+  export const deleteFavorite = (id) => globalThis.testFavoriteRepository.deleteFavorite(id);
+`;
+register(`data:text/javascript,${encodeURIComponent(`
+  export async function resolve(specifier, context, nextResolve) {
+    if (specifier === './supabase.js' && context.parentURL?.includes('?integration=')) {
+      return { url: ${JSON.stringify(`data:text/javascript,${encodeURIComponent(repositoryModule)}`)}, shortCircuit: true };
+    }
+    return nextResolve(specifier, context);
+  }
+`)}`, import.meta.url);
+
+async function startApp(t, { comparison = true, statsResponse = async () => ({ ok: true, text: async () => STATS_CSV }), favoriteResponse = async (record) => ({ id: 1, ...record }) } = {}) {
   const ids = ['player-form', 'player-name', 'result', 'player-count', 'favorites-list', 'favorites-status', 'favorites-count'];
   if (comparison) ids.push('comparison', 'comparison-status', 'comparison-content');
   const elements = Object.fromEntries(ids.map((id) => [id, new TestElement()]));
   const originalDocument = globalThis.document;
-  globalThis.document = { getElementById: (id) => elements[id] ?? null };
+  globalThis.document = { getElementById: (id) => elements[id] ?? null, body: new TestElement(), activeElement: null };
+  globalThis.document.activeElement = globalThis.document.body;
+  let favoriteRequests = 0;
+  const originalRepository = globalThis.testFavoriteRepository;
+  globalThis.testFavoriteRepository = {
+    listFavorites: async () => [],
+    createFavorite: (record) => { favoriteRequests += 1; return favoriteResponse(record); },
+    deleteFavorite: async () => {},
+  };
   t.after(() => {
     if (originalDocument === undefined) delete globalThis.document;
     else globalThis.document = originalDocument;
+    if (originalRepository === undefined) delete globalThis.testFavoriteRepository;
+    else globalThis.testFavoriteRepository = originalRepository;
   });
   let statsRequests = 0;
   t.mock.method(globalThis, 'fetch', async (url) => {
@@ -152,17 +192,19 @@ async function startApp(t, { comparison = true, statsResponse = async () => ({ o
     }) };
   });
   await import(`../script.js?integration=${++appInstance}`);
-  // O import remoto do cliente Supabase não é suportado pelo Node; a falha
-  // existente é tratada pela app e não participa dos cliques do comparador.
   await new Promise(setImmediate);
   return {
     elements,
     statsRequests: () => statsRequests,
+    favoriteRequests: () => favoriteRequests,
+    control: (attribute, key) => [...elements.result.buttons, ...(elements['comparison-content']?.buttons ?? [])]
+      .find((button) => button.dataset[attribute] === String(key)),
     async search(term = 'Player') {
       elements['player-name'].value = term;
       await elements['player-form'].emit('submit');
     },
     add: (key) => elements.result.emit('click', { addComparison: key }),
+    save: (key) => elements.result.emit('click', { saveFavorite: key }),
     remove: (slot) => elements.comparison?.emit('click', { removeComparison: String(slot) }),
   };
 }
@@ -178,7 +220,7 @@ test('duelo carrega CSV sob demanda, bloqueia seleção durante carga e reutiliz
 
   const firstSelection = app.add('player-one--test-team');
   assert.match(elements['comparison-status'].textContent, /Carregando/);
-  assert.equal(elements.result.buttons.every((button) => button.disabled), true);
+  assert.equal(elements.result.querySelectorAll('[data-add-comparison]').every((button) => button.disabled), true);
   await app.add('player-two--test-team');
   assert.equal(app.statsRequests(), 1);
   resolveStats({ ok: true, text: async () => STATS_CSV });
@@ -269,4 +311,107 @@ test('resposta de estatísticas não restaura resultados apagados por uma busca 
   const board = app.elements['comparison-content'].innerHTML;
   await app.add('player-two--test-team');
   assert.equal(app.elements['comparison-content'].innerHTML, board);
+});
+
+test('atualizações do duelo mantêm favorito pendente bloqueado e impedem salvamento duplicado', async (t) => {
+  let resolveFavorite;
+  let resolveStats;
+  const saved = new Promise((resolve) => { resolveFavorite = resolve; });
+  const stats = new Promise((resolve) => { resolveStats = resolve; });
+  const app = await startApp(t, { favoriteResponse: () => saved, statsResponse: () => stats });
+  await app.search();
+  const firstSave = app.save('player-one--test-team');
+  await new Promise(setImmediate);
+  const selection = app.add('player-one--test-team');
+  const blockedDuringLoad = app.control('saveFavorite', 'player-one--test-team').disabled;
+  resolveStats({ ok: true, text: async () => STATS_CSV });
+  await selection;
+  const blockedAfterLoad = app.control('saveFavorite', 'player-one--test-team').disabled;
+  await app.remove(0);
+  const blockedAfterRemoval = app.control('saveFavorite', 'player-one--test-team').disabled;
+  const secondSave = app.save('player-one--test-team');
+  await new Promise(setImmediate);
+  const pendingRequests = app.favoriteRequests();
+  resolveFavorite({ id: 1, chave_atleta: 'player-one--test-team', nome: 'Player One', equipe: 'Test Team' });
+  await Promise.all([firstSave, secondSave]);
+  await app.save('player-one--test-team');
+  assert.equal(blockedDuringLoad, true);
+  assert.equal(blockedAfterLoad, true);
+  assert.equal(blockedAfterRemoval, true);
+  assert.equal(pendingRequests, 1);
+  assert.equal(app.favoriteRequests(), 1);
+  assert.equal(app.control('saveFavorite', 'player-one--test-team').disabled, true);
+});
+
+test('falha ao salvar favorito libera a chave pendente para nova tentativa', async (t) => {
+  let rejectFavorite;
+  const saved = new Promise((resolve, reject) => { rejectFavorite = reject; });
+  saved.catch(() => {});
+  const app = await startApp(t, { favoriteResponse: () => saved });
+  await app.search();
+  const firstSave = app.save('player-one--test-team');
+  await new Promise(setImmediate);
+  await app.add('player-one--test-team');
+  rejectFavorite(new Error('offline'));
+  await firstSave;
+  assert.equal(app.control('saveFavorite', 'player-one--test-team').disabled, false);
+  await app.save('player-one--test-team');
+  assert.equal(app.favoriteRequests(), 2);
+});
+
+test('seleção transfere foco ao controle de remoção e remoção devolve à ação do atleta', async (t) => {
+  const app = await startApp(t);
+  await app.search();
+  app.control('addComparison', 'player-one--test-team').focus();
+  await app.add('player-one--test-team');
+  assert.equal(globalThis.document.activeElement, app.control('removeComparison', 0));
+  app.control('addComparison', 'player-two--test-team').focus();
+  await app.add('player-two--test-team');
+  assert.equal(globalThis.document.activeElement, app.control('removeComparison', 1));
+  app.control('removeComparison', 0).focus();
+  await app.remove(0);
+  assert.equal(globalThis.document.activeElement, app.control('addComparison', 'player-one--test-team'));
+});
+
+test('conclusão assíncrona do CSV preserva foco no controle atual do comparador', async (t) => {
+  let resolveStats;
+  const stats = new Promise((resolve) => { resolveStats = resolve; });
+  const app = await startApp(t, { statsResponse: () => stats });
+  await app.search();
+  app.control('addComparison', 'player-one--test-team').focus();
+  const selection = app.add('player-one--test-team');
+  const focusAfterSelection = globalThis.document.activeElement;
+  const removeBeforeResponse = app.control('removeComparison', 0);
+  removeBeforeResponse.focus();
+  resolveStats({ ok: true, text: async () => STATS_CSV });
+  await selection;
+  assert.equal(focusAfterSelection, removeBeforeResponse);
+  assert.equal(globalThis.document.activeElement, app.control('removeComparison', 0));
+  assert.notEqual(globalThis.document.activeElement, removeBeforeResponse);
+});
+
+test('resposta do CSV não rouba foco movido pelo usuário para o campo de busca', async (t) => {
+  let resolveStats;
+  const stats = new Promise((resolve) => { resolveStats = resolve; });
+  const app = await startApp(t, { statsResponse: () => stats });
+  await app.search();
+  app.control('addComparison', 'player-one--test-team').focus();
+  const selection = app.add('player-one--test-team');
+  app.elements['player-name'].focus();
+  resolveStats({ ok: true, text: async () => STATS_CSV });
+  await selection;
+  assert.equal(globalThis.document.activeElement, app.elements['player-name']);
+});
+
+test('resposta do CSV preserva foco movido para a ação de favorito de outro atleta', async (t) => {
+  let resolveStats;
+  const stats = new Promise((resolve) => { resolveStats = resolve; });
+  const app = await startApp(t, { statsResponse: () => stats });
+  await app.search();
+  app.control('addComparison', 'player-one--test-team').focus();
+  const selection = app.add('player-one--test-team');
+  app.control('saveFavorite', 'player-two--test-team').focus();
+  resolveStats({ ok: true, text: async () => STATS_CSV });
+  await selection;
+  assert.equal(globalThis.document.activeElement, app.control('saveFavorite', 'player-two--test-team'));
 });
