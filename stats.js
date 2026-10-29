@@ -62,12 +62,16 @@ function safeRate(numerator, denominator) {
 }
 
 function sum(rows, fields) {
-  const present = fields.some((field) => rows.some((row) => row[field] !== undefined && row[field] !== null && row[field] !== ''));
-  if (!present) return null;
-  return rows.reduce((total, row) => total + fields.reduce((part, field) => {
-    const value = Number(row[field]);
-    return part + (Number.isFinite(value) ? value : 0);
+  let foundValue = false;
+  const total = rows.reduce((sumTotal, row) => sumTotal + fields.reduce((part, field) => {
+    const rawValue = row[field];
+    if (rawValue === undefined || rawValue === null || rawValue === '') return part;
+    const value = Number(rawValue);
+    if (!Number.isFinite(value)) return part;
+    foundValue = true;
+    return part + value;
   }, 0), 0);
+  return foundValue ? total : null;
 }
 
 function calculateFromTotals(totals) {
@@ -80,8 +84,10 @@ function calculateFromTotals(totals) {
   const threeAttempted = sum([totals], ['three_point_attempted']);
   const rebound = sum([totals], ['offensive_rebounds', 'defensive_rebounds']);
   const perGame = (value) => value === null ? null : value / games;
-  const fgMade = (twoMade ?? 0) + (threeMade ?? 0);
-  const fgAttempted = (twoAttempted ?? 0) + (threeAttempted ?? 0);
+  const fgMade = twoMade === null || threeMade === null ? null : twoMade + threeMade;
+  const fgAttempted = twoAttempted === null || threeAttempted === null ? null : twoAttempted + threeAttempted;
+  const fgRate = fgMade === null || fgAttempted === null ? null : safeRate(fgMade, fgAttempted);
+  const threeRate = threeMade === null || threeAttempted === null ? null : safeRate(threeMade, threeAttempted);
   return {
     games,
     ppg: points === null ? null : ((totals.one_point_made ?? 0) + 2 * (twoMade ?? 0) + 3 * (threeMade ?? 0)) / games,
@@ -90,8 +96,8 @@ function calculateFromTotals(totals) {
     spg: perGame(totals.steals),
     bpg: perGame(totals.blocks),
     mpg: perGame(totals.minutes_played),
-    fgPct: safeRate(fgMade, fgAttempted) === null ? null : safeRate(fgMade, fgAttempted) * 100,
-    threePct: safeRate(threeMade ?? 0, threeAttempted ?? 0) === null ? null : safeRate(threeMade ?? 0, threeAttempted ?? 0) * 100,
+    fgPct: fgRate === null ? null : fgRate * 100,
+    threePct: threeRate === null ? null : threeRate * 100,
   };
 }
 

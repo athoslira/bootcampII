@@ -36,6 +36,17 @@ test('calculatePlayerStats retorna null sem jogos e preserva divisão impossíve
   assert.equal(calculatePlayerStats([{ wins: 0, losses: 0 }]), null);
 });
 
+test('calculatePlayerStats preserva aproveitamento desconhecido sem numerador', () => {
+  const stats = calculatePlayerStats([{ wins: 1, losses: 0, three_point_attempted: 5 }]);
+  assert.equal(stats.fgPct, null);
+  assert.equal(stats.threePct, null);
+});
+
+test('calculatePlayerStats mantém métrica indisponível quando os valores são inválidos', () => {
+  const stats = calculatePlayerStats([{ wins: 1, losses: 0, assists: 'N/A' }]);
+  assert.equal(stats.apg, null);
+});
+
 test('createStatsIndex agrega linhas com o mesmo nome', () => {
   const index = createStatsIndex([
     { player_name: 'A.J. Lawson', wins: 1, losses: 0, one_point_made: 2 },
