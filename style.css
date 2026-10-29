@@ -49,6 +49,7 @@ button:disabled { cursor:wait; opacity:.55; }
 .comparison-profile + .comparison-profile, .comparison-profile + .comparison-placeholder, .comparison-placeholder + .comparison-profile, .comparison-placeholder + .comparison-placeholder { border-left:1px solid #66645e; }
 .comparison-profile .player-photo { margin-bottom:1rem; }
 .comparison-profile .player-photo img, .comparison-profile .avatar-fallback { width:80px; height:60px; }
+.comparison-profile .avatar-fallback { color:var(--ink); }
 .comparison-profile .team-code { color:var(--winner); }
 .comparison-profile h3 { margin:0; overflow-wrap:anywhere; font:700 clamp(1.5rem,3vw,2.5rem)/1 Georgia,serif; }
 .comparison-profile > p:not(.team-code) { margin:.45rem 0; color:#c5c2b8; font-size:.85rem; }
