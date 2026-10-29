@@ -85,8 +85,8 @@ test('comparisonMarkup mostra perfis, oito métricas e vencedor de cada linha', 
     assert.ok(html.includes(label), label);
   }
   assert.equal((html.match(/<tbody>[\s\S]*<\/tbody>/)?.[0].match(/<tr>/g) ?? []).length, 8);
-  assert.match(html, /class="is-leading">25,0<\/td>/);
-  assert.match(html, /class="is-leading">10,0<\/td>/);
+  assert.match(html, /class="is-leading">25,0<span/);
+  assert.match(html, /class="is-leading">10,0<span/);
   assert.match(html, /60,0%/);
   assert.equal((html.match(/class="is-leading"/g) ?? []).length, 7);
   assert.doesNotMatch(html, /Sem dados na temporada/);
@@ -124,4 +124,21 @@ test('comparisonMarkup rejeita esquema de imagem inseguro', () => {
   const html = comparisonMarkup([{ ...left, image: 'javascript:alert(1)' }, null], stats);
   assert.doesNotMatch(html, /javascript:|<img/);
   assert.match(html, /avatar-fallback/);
+});
+
+test('comparisonMarkup desenha barras proporcionais seguras apenas com dados comparáveis', () => {
+  const testStats = new Map([
+    ['nikola jokic', { ppg: 20, rpg: 10, apg: 0, spg: -5, bpg: '100; color:red', mpg: Infinity }],
+    ['luka doncic', { ppg: 25, rpg: 10, apg: 0, spg: 5, bpg: 2, mpg: 10 }],
+  ]);
+  const html = comparisonMarkup([left, right], testStats);
+  const row = (label) => html.match(new RegExp(`<tr><th scope="row">${label}</th>[\\s\\S]*?</tr>`))[0];
+  const widths = (label) => [...row(label).matchAll(/class="metric-bar" aria-hidden="true" style="width:([\d.]+)%"/g)].map((match) => Number(match[1]));
+  assert.deepEqual(widths('Pontos/jogo'), [80, 100]);
+  assert.deepEqual(widths('Rebotes/jogo'), [100, 100]);
+  assert.deepEqual(widths('Assistências/jogo'), [0, 0]);
+  assert.deepEqual(widths('Roubos/jogo'), [0, 100]);
+  assert.deepEqual(widths('Bloqueios/jogo'), []);
+  assert.deepEqual(widths('Minutos/jogo'), []);
+  assert.doesNotMatch(html, /style="[^"]*color:red/);
 });

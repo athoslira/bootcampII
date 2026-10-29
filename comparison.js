@@ -68,7 +68,14 @@ export function comparisonMarkup(slots, statsIndex) {
   const profiles = players.map((player, index) => profileMarkup(player, stats[index], index)).join('');
   const rows = METRICS.map(({ key, label, kind }) => {
     const leader = comparisonLeader(stats[0], stats[1], key);
-    const valueCell = (index, side) => `<td${leader === side ? ' class="is-leading"' : ''}>${formatStat(stats[index]?.[key], kind)}</td>`;
+    const values = stats.map((entry) => entry?.[key]);
+    const comparable = values.every(Number.isFinite);
+    const maximum = comparable ? Math.max(0, ...values) : 0;
+    const valueCell = (index, side) => {
+      const width = maximum > 0 ? Math.min(100, Math.max(0, values[index] / maximum * 100)) : 0;
+      const bar = comparable ? `<span class="metric-bar" aria-hidden="true" style="width:${width}%"></span>` : '';
+      return `<td${leader === side ? ' class="is-leading"' : ''}>${formatStat(values[index], kind)}${bar}</td>`;
+    };
     return `<tr><th scope="row">${label}</th>${valueCell(0, 'left')}${valueCell(1, 'right')}</tr>`;
   }).join('');
   return `<div class="comparison-profiles">${profiles}</div>

@@ -66,7 +66,7 @@ button:disabled { cursor:wait; opacity:.55; }
 .comparison-table td { font-size:1.1rem; font-weight:800; font-variant-numeric:tabular-nums; }
 .comparison-table .is-leading, .comparison-metric .is-leading { color:var(--winner); }
 .comparison-metric { border-bottom:1px solid #4b4a46; }
-.metric-bar { background:var(--winner); transition:width .25s ease; }
+.metric-bar { display:block; height:3px; margin:.4rem 0 0 auto; background:var(--winner); transition:width .25s ease; }
 @media(max-width:700px) {
   .comparison-area .section-heading { align-items:flex-start; flex-direction:column; }
   .comparison-profile, .comparison-placeholder { padding:1rem; }
