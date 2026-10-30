@@ -9,6 +9,7 @@ Esta entrega foi realizada individualmente, conforme autorização para realiza�
 ## Links da entrega
 
 - [Repositório no GitHub](https://github.com/athoslira/bootcampII)
+- [Pull Request principal da etapa 03 — #1](https://github.com/athoslira/bootcampII/pull/1)
 - [Aplicação no GitHub Pages](https://athoslira.github.io/bootcampII/)
 - [Imagem no Docker Hub](https://hub.docker.com/r/athoslira/bootcamp2-app)
 
