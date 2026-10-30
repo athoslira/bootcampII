@@ -79,7 +79,13 @@ Os testes cobrem perfis e favoritos, interpretação do CSV, normalização de n
 
 O [workflow CI](.github/workflows/ci.yml) executa em pushes para `main` e pull requests destinados a `main`. O job `test` usa Ubuntu, Node.js 20, cache npm, `npm ci` e `npm test`, com permissão somente de leitura do conteúdo do repositório.
 
-Evidência da demonstração de bloqueio por falha no CI: [etapa-03-ci-bloqueado.png](evidencias/etapa-03-ci-bloqueado.png).
+Captura autenticada da área de merge da [PR #1](https://github.com/athoslira/bootcampII/pull/1) durante a falha controlada: o check `CI / test (pull_request)` está vermelho e o botão `Merge pull request` está desativado.
+
+![Check de CI falho e botão de merge desativado na PR](evidencias/etapa-03-ci-bloqueado.png)
+
+Detalhe da primeira execução com falha controlada em Actions: o job `test` e a etapa `Run npm test` falharam. Esta captura complementa a área de merge mostrada acima.
+
+![Job test e etapa npm test falhos em Actions](evidencias/etapa-03-ci-falha-actions.png)
 
 ## Docker: etapa 03
 
