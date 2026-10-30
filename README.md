@@ -1,10 +1,10 @@
 # Quadra em Foco
 
-Aplicação web para pesquisar atletas da NBA em uma base pública com mais de mil perfis e montar uma lista persistente de favoritos.
+Aplicação web para pesquisar atletas da NBA, salvar favoritos e comparar dois atletas nas estatísticas da temporada regular 2025–26.
 
-## Autor
+## Autoria e responsabilidade individual
 
-Athos Lira Araújo — GitHub [@athoslira](https://github.com/athoslira) — Matrícula: **22307894**
+Esta entrega foi realizada individualmente, conforme autorização para realização individual. **Athos Lira Araújo**, matrícula **22307894**, usuário GitHub **athoslira**, é responsável pela implementação, pelos testes, pela integração contínua, pela imagem Docker e pela documentação da etapa 03.
 
 ## Links da entrega
 
@@ -14,39 +14,46 @@ Athos Lira Araújo — GitHub [@athoslira](https://github.com/athoslira) — Mat
 
 ## Funcionalidades
 
-- Busca por nome completo ou parcial em uma base de 1.076 atletas.
-- Exibição de foto, equipe, posição, altura, peso e formação.
-- Criação, listagem e exclusão de atletas favoritos.
-- Favoritos preservados após fechar ou recarregar o navegador.
-- Prevenção de duplicatas e indicação visual de atletas já salvos.
-- Interface responsiva, acessível por teclado e com estados de carregamento e erro.
+- Busca por nome completo ou parcial, com foto, equipe, posição, altura, peso e formação.
+- Criação, listagem e exclusão de favoritos persistidos no Supabase, com prevenção de duplicatas e indicação de atleta salvo.
+- **Duelo de atletas:** selecione até dois resultados da busca, remova uma seleção para substituí-la e compare oito métricas lado a lado.
+- Destaque do maior valor de cada métrica e barras proporcionais; empates e dados ausentes não recebem um vencedor.
+- Estados de carregamento e erro, operação por teclado e preservação do foco após atualizações do comparador.
 
-## API externa
+O CSV é carregado na primeira seleção para o duelo e reutilizado durante a sessão. Uma falha nessa fonte é informada no comparador e não impede a busca de atletas. O duelo existe apenas na sessão da página; os favoritos continuam persistentes.
 
-A busca consome o dataset público [NBA Rosters](https://github.com/A-V29/NBA.Rosters):
+## Fontes de dados
 
-```text
-https://raw.githubusercontent.com/A-V29/NBA.Rosters/main/2025-26.NBA.Roster.json
-```
+Os perfis e as fotos vêm do dataset público [NBA Rosters](https://github.com/A-V29/NBA.Rosters), por meio do [elenco JSON 2025–26](https://raw.githubusercontent.com/A-V29/NBA.Rosters/main/2025-26.NBA.Roster.json).
+
+As estatísticas vêm do repositório público [NBA API 25–26 Data, de EasySportsApps](https://github.com/EasySportsApps/nba_api_25_26_data), no arquivo [nba_players_regular_season_25_26_wide_data.csv](https://raw.githubusercontent.com/EasySportsApps/nba_api_25_26_data/refs/heads/main/nba_players_regular_season_25_26_wide_data.csv). A aplicação consulta as fontes remotas diretamente, por isso depende de conexão e da disponibilidade desses arquivos.
+
+### Cálculos do comparador
+
+O módulo `stats.js` interpreta o CSV, normaliza os nomes sem diferenciar acentos, pontuação e maiúsculas e agrega as linhas com o mesmo nome antes de calcular as métricas. O número de jogos é a soma de `wins + losses`.
+
+| Métrica | Cálculo a partir dos totais agregados |
+| --- | --- |
+| Pontos/jogo | `(one_point_made + 2 × two_point_made + 3 × three_point_made) / jogos` |
+| Rebotes/jogo | `(offensive_rebounds + defensive_rebounds) / jogos` |
+| Assistências/jogo | `assists / jogos` |
+| Roubos/jogo | `steals / jogos` |
+| Bloqueios/jogo | `blocks / jogos` |
+| Minutos/jogo | `minutes_played / jogos` |
+| Aproveitamento de quadra | `100 × (two_point_made + three_point_made) / (two_point_attempted + three_point_attempted)` |
+| Aproveitamento de três | `100 × three_point_made / three_point_attempted` |
+
+Não há média das médias: os totais das linhas são somados primeiro. Registros sem jogos válidos ficam fora do índice; métricas indisponíveis e divisões sem tentativas aparecem como `—`. Um atleta sem correspondência no índice recebe a indicação **Sem dados na temporada**. Os valores são exibidos com uma casa decimal, em formato brasileiro.
 
 ## Persistência
 
-Os favoritos são armazenados em um banco PostgreSQL no Supabase. A tabela `favoritos` possui:
+Os favoritos são armazenados na tabela PostgreSQL `favoritos` do Supabase. O [script de criação](supabase/schema.sql) define o identificador, a data de cadastro, a chave única de nome e equipe e os campos do perfil do atleta. A aplicação realiza **Create**, **Read** e **Delete**.
 
-| Coluna | Finalidade |
-| --- | --- |
-| `id` | Identificador gerado pelo banco |
-| `criado_em` | Data e hora do cadastro |
-| `chave_atleta` | Chave única baseada no nome e na equipe |
-| `nome`, `equipe`, `posicao` | Identificação esportiva |
-| `altura`, `peso`, `faculdade` | Informações do perfil |
-| `imagem_url` | Foto pública do atleta |
-
-A aplicação realiza as operações **Create**, **Read** e **Delete**. O script reproduzível de criação está em [`supabase/schema.sql`](supabase/schema.sql).
-
-O Row Level Security está habilitado, mas as políticas permitem `SELECT`, `INSERT` e `DELETE` para o papel anônimo. Essa configuração aberta foi usada somente para a etapa acadêmica, que não inclui autenticação: todos os visitantes compartilham a mesma lista de favoritos. Em produção, cada registro deveria ser vinculado a um usuário autenticado.
+O Row Level Security está habilitado com políticas anônimas de leitura, inclusão e exclusão para esta atividade acadêmica. Como não há autenticação, todos os visitantes compartilham a lista de favoritos.
 
 ## Executar localmente
+
+Use um servidor HTTP para carregar os módulos JavaScript:
 
 ```bash
 git clone https://github.com/athoslira/bootcampII.git
@@ -54,60 +61,73 @@ cd bootcampII
 python -m http.server 8080
 ```
 
-Abra `http://localhost:8080`.
+Abra `http://localhost:8080`, pesquise dois atletas e use **Adicionar ao duelo** em cada resultado.
 
-## Executar com Docker
+## Testes e integração contínua
 
-Com o Docker em execução, qualquer pessoa pode iniciar a versão final com uma linha:
-
-```bash
-docker run -d -p 8080:80 athoslira/bootcamp2-app:1.1
-```
-
-Depois, abra `http://localhost:8080`.
-
-Tags publicadas:
-
-- `1.0`: primeira versão com CRUD persistente funcional.
-- `1.1`: adiciona prevenção visual de duplicatas, contador e estado **Salvo**.
-- `latest`: aponta para o mesmo conteúdo da versão `1.1`.
-
-## Testes
-
-O projeto usa o test runner nativo do Node.js:
+Com Node.js 20 e npm instalados:
 
 ```bash
+npm ci
 npm test
 ```
 
-Os testes cobrem normalização dos dados da NBA, escape de HTML, geração da chave do atleta, payload enviado ao Supabase, validação de identificadores, indexação de favoritos e estado visual de atletas já salvos.
+O projeto usa o test runner nativo do Node.js e não possui dependências npm externas. O `package-lock.json` é versionado para permitir instalação reproduzível com `npm ci`.
 
-## Sidequests
+Os testes cobrem perfis e favoritos, interpretação do CSV, normalização de nomes, agregação e cálculos, seleção e remoção no duelo, prevenção de duplicatas, apresentação de métricas, escape de conteúdo remoto, falhas de rede e preservação de foco nas atualizações assíncronas.
 
-### SQ1 · `.dockerignore`
+O [workflow CI](.github/workflows/ci.yml) executa em pushes para `main` e pull requests destinados a `main`. O job `test` usa Ubuntu, Node.js 20, cache npm, `npm ci` e `npm test`, com permissão somente de leitura do conteúdo do repositório.
 
-O arquivo [`.dockerignore`](.dockerignore) exclui do contexto de build o histórico Git, testes, documentação interna, evidências, arquivos de editor e dependências locais. Isso reduz os dados enviados ao daemon, melhora o reaproveitamento do cache e evita colocar arquivos sem função dentro da imagem.
+Evidência da demonstração de bloqueio por falha no CI: [etapa-03-ci-bloqueado.png](evidencias/etapa-03-ci-bloqueado.png).
 
-### SQ2 · Versionamento da imagem
+## Docker: etapa 03
 
-As tags públicas `1.0`, `1.1` e `latest` estão no [Docker Hub](https://hub.docker.com/r/athoslira/bootcamp2-app/tags). A `1.0` registra o primeiro CRUD funcional; a `1.1` representa uma melhoria observável na prevenção de favoritos duplicados. `latest` e `1.1` apontam para o mesmo digest.
+A versão **2.0** inclui o comparador e seus módulos `stats.js` e `comparison.js`. A imagem usa Nginx Alpine para servir os arquivos estáticos. As tags da entrega são `athoslira/bootcamp2-app:2.0` e `athoslira/bootcamp2-app:latest`; `latest` deve acompanhar a versão 2.0 ao publicar esta etapa.
 
-### SQ3 · Overview no Docker Hub
+Para construir localmente as duas tags:
 
-O overview do repositório descreve a aplicação, apresenta o comando `docker run` pronto para copiar e liga para o [código-fonte no GitHub](https://github.com/athoslira/bootcampII).
+```bash
+docker build -t athoslira/bootcamp2-app:2.0 -t athoslira/bootcamp2-app:latest .
+```
+
+Para executar a versão 2.0:
+
+```bash
+docker run --rm -d --name bootcamp2-v2 -p 8080:80 athoslira/bootcamp2-app:2.0
+```
+
+Abra `http://localhost:8080`. Para usar a tag de acompanhamento, substitua `:2.0` por `:latest`. Para encerrar:
+
+```bash
+docker stop bootcamp2-v2
+```
+
+Após autenticar no Docker Hub, a publicação das tags é feita com:
+
+```bash
+docker push athoslira/bootcamp2-app:2.0
+docker push athoslira/bootcamp2-app:latest
+```
+
+As versões anteriores `1.0` e `1.1` registram, respectivamente, os favoritos persistentes e a melhoria visual de prevenção de duplicatas.
+
+## Conflitos
+
+Não houve conflito de merge nesta entrega individual.
+
+## Sidequests das etapas anteriores
+
+- **SQ1 · Contexto Docker:** o [`.dockerignore`](.dockerignore) exclui histórico Git, testes, evidências, documentação e dependências locais do contexto de build.
+- **SQ2 · Versionamento:** as versões podem ser consultadas nas [tags do Docker Hub](https://hub.docker.com/r/athoslira/bootcamp2-app/tags).
+- **SQ3 · Overview:** o overview apresenta a aplicação, o comando de execução e o link para o código-fonte.
+- **SQ4 · Orquestração:** dois containers da versão 1.1 foram executados nas portas 8080 e 8081. Para uma implantação com 100 containers, um Deployment no Kubernetes permitiria declarar réplicas e substituir instâncias que falham; cada pod encapsularia uma instância da aplicação dentro do cluster.
 
 ![Overview publicado no Docker Hub](evidencias/dockerhub-overview.png)
 
-### SQ4 · Explorando a orquestração
-
-Dois containers da versão `1.1` foram executados simultaneamente nas portas 8080 e 8081:
-
 ![Saída real do docker ps com dois containers](evidencias/sq4-docker-ps.png)
-
-Com 100 containers, eu usaria Kubernetes em vez de iniciar e acompanhar cada processo manualmente. Um **cluster** reúne as máquinas disponíveis; cada **pod** encapsula uma ou mais instâncias da aplicação; e um Deployment declara a quantidade desejada de **réplicas**. O controlador recria réplicas que falham, distribui a carga e permite atualizações graduais sem administrar container por container.
 
 ## Limitações conhecidas
 
-- A lista de favoritos é compartilhada porque esta etapa não possui autenticação.
-- A disponibilidade das fotos depende das URLs fornecidas pelo dataset externo.
-- As políticas anônimas do Supabase devem ser substituídas antes de um uso em produção.
+- Os favoritos são compartilhados porque a aplicação não possui autenticação.
+- Perfis e estatísticas são fontes distintas, associadas pelo nome normalizado; diferenças de grafia podem deixar atletas sem estatísticas no duelo.
+- A disponibilidade das fotos e dos dados depende das fontes externas.
