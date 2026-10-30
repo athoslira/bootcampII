@@ -237,6 +237,17 @@ test('duelo carrega CSV sob demanda, bloqueia seleção durante carga e reutiliz
   assert.equal(app.statsRequests(), 1);
 });
 
+test('busca encontra nomes do elenco quando a consulta contém diacríticos', async (t) => {
+  const app = await startApp(t);
+  await app.search('  PLÁYER ÓNE  ');
+  assert.match(app.elements.result.innerHTML, /Player One/);
+  assert.doesNotMatch(app.elements.result.innerHTML, /Player Two/);
+  await app.search('Pláyer Twó');
+  assert.match(app.elements.result.innerHTML, /Player Two/);
+  assert.doesNotMatch(app.elements.result.innerHTML, /Player One/);
+  assert.equal(app.statsRequests(), 0);
+});
+
 test('duelo recusa atleta invisível, duplicata e terceiro sem substituir; remoção libera o slot', async (t) => {
   const app = await startApp(t);
   const board = app.elements['comparison-content'];

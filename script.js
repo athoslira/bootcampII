@@ -1,6 +1,6 @@
 import { escapeHtml, favoriteCardMarkup, favoriteKeySet, playerKey, toFavoriteRecord } from './favorites.js';
 import { addPlayerToComparison, comparisonMarkup, removePlayerFromComparison } from './comparison.js';
-import { createStatsIndex, parseStatsCsv } from './stats.js';
+import { createStatsIndex, normalizeStatsName, parseStatsCsv } from './stats.js';
 
 const ROSTER_URL = 'https://raw.githubusercontent.com/A-V29/NBA.Rosters/main/2025-26.NBA.Roster.json';
 const STATS_URL = 'https://raw.githubusercontent.com/EasySportsApps/nba_api_25_26_data/refs/heads/main/nba_players_regular_season_25_26_wide_data.csv';
@@ -170,7 +170,7 @@ function initialise() {
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
-    const term = input.value.trim().toLocaleLowerCase('pt-BR');
+    const term = normalizeStatsName(input.value);
     lastMatches = [];
     visiblePlayers = new Map();
     if (!term) return setStatus(result, 'Digite pelo menos parte do nome de um atleta.', 'error');
@@ -179,7 +179,7 @@ function initialise() {
     try {
       const roster = await loadRoster();
       const matches = roster.players
-        .filter((player) => player.name?.toLocaleLowerCase('pt-BR').includes(term))
+        .filter((player) => normalizeStatsName(player.name).includes(term))
         .slice(0, 12)
         .map((player) => normalizeRosterPlayer(player, roster.teams));
 
