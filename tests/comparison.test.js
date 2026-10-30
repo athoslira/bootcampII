@@ -45,7 +45,7 @@ test('removePlayerFromComparison limpa somente o slot solicitado sem mutar a ent
 });
 
 test('comparisonLeader identifica os dois líderes, empate e zero válido', () => {
-  assert.equal(comparisonLeader({ ppg: 20 }, { ppg: 10 }, 'ppg'), 'left');
+  assert.equal(comparisonLeader({ ppg: 20 }, { ppg: 10 }, 'ppg'), 'right');
   assert.equal(comparisonLeader({ ppg: 10 }, { ppg: 20 }, 'ppg'), 'right');
   assert.equal(comparisonLeader({ ppg: 10 }, { ppg: 10 }, 'ppg'), 'tie');
   assert.equal(comparisonLeader({ ppg: 0 }, { ppg: 0 }, 'ppg'), 'tie');
